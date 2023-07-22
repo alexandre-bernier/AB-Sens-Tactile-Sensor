@@ -38,7 +38,7 @@ Here's a list of all available commands:
 
 | Value  | Command                                  |      
 |--------|------------------------------------------|
-| `0x58` | Auto send sensor values (*on*/*off*)[^1] |
+| `0x58` | Auto send sensor values (*on*/*off*) [^1] |
 | `0x61` | Read sensor values (once)                |
 
 [^1]: Toggles the auto send feature. Always starts *off*.
