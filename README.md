@@ -72,7 +72,7 @@ that will follow the sensor type:
 
 ### Python
 
-Please refer to the [Python README](https://github.com/alexandre-bernier/AB-Sens-Tactile-Sensor/Examples/Python/Python_README.md).
+Please refer to the [Python README](AB-Sens-Tactile-Sensor/Examples/Python/Python_README.md).
 
 ## Bugs & Feature Requests
 
