@@ -2,51 +2,146 @@
 # Author: Alexandre Bernier
 # Copyright: BSD-3-Clause License
 
-import serial
 
+###########
+# Imports #
+###########
+import serial
+import time
+
+
+################
+# Declarations #
+################
 # Messages header
 first_byte = 0x9A
 not_used = 0x00
+zero = 0x00
+period_length = 0x01
+period = 0x01
 
 # List of commands
 cmd_read_sensors = 0x61
 cmd_autosend_sensors = 0x58
+
+# Messages
+msg_cmd_read_sensors = bytearray([first_byte, not_used, cmd_read_sensors, zero])
+msg_cmd_start_autosend_sensors = bytearray([first_byte, not_used, cmd_autosend_sensors, period_length, period])
+msg_cmd_stop_autosend_sensors = bytearray([first_byte, not_used, cmd_autosend_sensors, period_length, zero])
 
 # To identify the Tactile Sensor device path, run 'sudo dmesg' after connecting it to your PC.
 # Make sure to adjust the device permissions with 'sudo chmod 777 [device_path]' or by adding them in your udev rules.
 dev_path = '/dev/ttyACM0'
 
 
-# Connecting to the sensors
-dev = serial.Serial(dev_path, baudrate=115200, timeout=0.5, write_timeout=0.5)
+#############################
+# Connection to the sensors #
+#############################
+dev = serial.Serial(dev_path, baudrate=115200)
 print("Connected to " + dev.name)
 
-
-# There are two ways to receive messages from the sensors
+print("Input bytes waiting:", dev.in_waiting)
+##################
+# Receiving data #
+##################
+# There are two ways to receive data from the sensors
 # 1- Ask for a single message at a time (command = cmd_read_sensors)
 # 2- Ask for a continuous stream of messages (command = cmd_autosend_sensors)
 
-# Method 1 (cmd_read_sensors)
-msg = [first_byte, not_used, cmd_read_sensors, 0x00]
-msg_bytearray = bytearray(msg)
-print("Sending READ_SENSORS")
+###################################
+# Method 2 (cmd_autosend_sensors) #
+###################################
+# Building the message: cmd_autosend_sensors (0x58)
+msg = msg_cmd_start_autosend_sensors
+print("Sending START_AUTOSEND_SENSORS: ", "".join('0x{:02x} '.format(x) for x in msg))
 
+# Sending the message
 try:
-    dev.write(msg_bytearray)
+    dev.write(msg)
 except serial.SerialTimeoutException:
     print("Write timeout, try reconnecting the sensor to your PC")
 
-try:
-    while True:
-        byte = dev.read(1)
-        print(byte)
-except serial.SerialTimeoutException:
-    print("Read timeout")
-    pass
+# Reading the responses
+data = None
+while True:
+    try:
+        # First byte (read until we find it)
+        resp_first_byte = None
+        correct_first_byte = False
+        while correct_first_byte is False:
+            resp_first_byte = dev.read(1)
+
+            if resp_first_byte != first_byte.to_bytes(1, "big"):
+                print("Byte read =", resp_first_byte)
+                print("Doesn't match the expected first byte:", first_byte.to_bytes(1, "big"))
+            else:
+                correct_first_byte = True
+        print("First byte =", resp_first_byte.hex())
+        print("In waiting:", dev.in_waiting)
+
+        # Not used
+        resp_non_used_byte = dev.read(1)
+        print("Non used byte =", resp_non_used_byte.hex())
+        print("In waiting:", dev.in_waiting)
+
+        # Command
+        resp_cmd = dev.read(1)
+        print("Command =", resp_cmd.hex())
+        print("In waiting:", dev.in_waiting)
+
+        # Data length
+        resp_data_length = dev.read(1)
+        print("Data length =", int.from_bytes(resp_data_length, "big"), "bytes")
+        print("In waiting:", dev.in_waiting)
+
+        # Sensor type
+        resp_sensor_type = dev.read(1)
+        # if resp_sensor_type != 0x10.to_bytes(1, "big"):
+        print("Sensor type=", resp_sensor_type.hex())
+        print("In waiting:", dev.in_waiting)
+
+        # Data
+        resp_data = dev.read(int.from_bytes(resp_data_length, "big")-1)
+        print("Data bytes =", resp_data.hex())
+        print("In waiting:", dev.in_waiting)
+
+        print("\n")
+
+        # byte = dev.read()
+        # print(byte.hex())
+
+    except KeyboardInterrupt:
+        break
+
+# Parsing the messages
+# if data is not None:
+#    print("Reading response: ", "".join('0x{:02x} '.format(x) for x in bytearray(data)))
+
+
+#    resp_first_byte = data[0]
+#    resp_command = data[2]
+#    resp_length = data[3]
+#    resp_sensor_type = data[4]
+#    resp_data = data[5:resp_length-1]
 
 print("Done reading")
 
 
-# Disconnecting from the sensors
+###################################
+# Stop auto sending sensor values #
+###################################
+msg = msg_cmd_stop_autosend_sensors
+print("Sending STOP_AUTOSEND_SENSORS: ", "".join('0x{:02x} '.format(x) for x in msg))
+
+# Sending the message
+try:
+    dev.write(msg)
+except serial.SerialTimeoutException:
+    print("Write timeout, try reconnecting the sensor to your PC")
+
+
+##################################
+# Disconnection from the sensors #
+##################################
 dev.close()
 print("Device disconnected")

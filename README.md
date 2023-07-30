@@ -36,18 +36,22 @@ All messages (in or out) follow the same structure as described below:
 
 Here's a list of all available commands:
 
-| Value  | Command                                  |      
-|--------|------------------------------------------|
-| `0x58` | Auto send sensor values (*on*/*off*)[^1] |
-| `0x61` | Read sensor values (once)                |
-
-[^1]: Toggles the auto send feature. Always starts *off*.
+| Value  | Command                   | Parameter                    | Parameter size |     
+|--------|---------------------------|------------------------------|----------------|
+| `0x58` | Auto send sensor values   | Period between messages (ms) | 1 byte         |
+| `0x61` | Read sensor values (once) | None                         | 0 byte         |
 
 #### Write (sending commands)
 
-When sending a command to the tactile sensor, no data is necessary in the message. You can thus put `0` as Length of
-data. An example of a message asking the tactile sensor to send a single burst of values would look like this:
-`0x9A 0x00 0x61 0x00`.
+The command you send will determine if you need to send data with the message.
+
+When sending "Read sensor values (once)" to the tactile sensor, no data is necessary in the message. You can thus put
+`0` as the Length of data. An example of a message asking the tactile sensor to send a single burst of values would
+look like this: `0x9A 0x00 0x61 0x00`.
+
+When sending "Auto send sensor values" to the tactile sensor, you need to add a byte of data containing the period
+you want between each data point. An example of a message asking the tactile sensor to auto send values every
+1ms would look like this: `0x9A 0x00 0x58 0x01 0x01` 
 
 #### Read (receiving data)
 When receiving a response from the tactile sensor, the message header will follow the same structure as above.
