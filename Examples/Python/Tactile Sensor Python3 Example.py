@@ -77,52 +77,38 @@ while True:
             else:
                 correct_first_byte = True
         print("First byte =", resp_first_byte.hex())
-        print("In waiting:", dev.in_waiting)
 
         # Not used
         resp_non_used_byte = dev.read(1)
-        print("Non used byte =", resp_non_used_byte.hex())
-        print("In waiting:", dev.in_waiting)
 
         # Command
         resp_cmd = dev.read(1)
         print("Command =", resp_cmd.hex())
-        print("In waiting:", dev.in_waiting)
 
         # Data length
         resp_data_length = dev.read(1)
         print("Data length =", int.from_bytes(resp_data_length, "big"), "bytes")
-        print("In waiting:", dev.in_waiting)
 
         # Sensor type
         resp_sensor_type = dev.read(1)
-        # if resp_sensor_type != 0x10.to_bytes(1, "big"):
         print("Sensor type=", resp_sensor_type.hex())
-        print("In waiting:", dev.in_waiting)
 
         # Data
         resp_data = dev.read(int.from_bytes(resp_data_length, "big")-1)
         print("Data bytes =", resp_data.hex())
-        print("In waiting:", dev.in_waiting)
 
         print("\n")
 
-        # byte = dev.read()
-        # print(byte.hex())
+        # Parsing the message
+        if resp_sensor_type == 0x10:
+            finger_0 = resp_data
+        elif resp_sensor_type == 0x14:
+            finger_1 = resp_data
+        elif resp_sensor_type == 0x20:
+            rest = resp_data
 
     except KeyboardInterrupt:
         break
-
-# Parsing the messages
-# if data is not None:
-#    print("Reading response: ", "".join('0x{:02x} '.format(x) for x in bytearray(data)))
-
-
-#    resp_first_byte = data[0]
-#    resp_command = data[2]
-#    resp_length = data[3]
-#    resp_sensor_type = data[4]
-#    resp_data = data[5:resp_length-1]
 
 print("Done reading")
 
